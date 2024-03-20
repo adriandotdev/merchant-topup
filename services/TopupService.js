@@ -25,4 +25,10 @@ module.exports = class TopupService {
 		}
 		return decryptedUser;
 	}
+
+	async Topup(identifier, amount) {
+		const result = await this.#repository.Topup(identifier, amount);
+
+		if (result.affectedRows > 0) return "SUCCESS";
+	}
 };

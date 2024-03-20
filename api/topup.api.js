@@ -65,7 +65,52 @@ module.exports = (app) => {
 					.json({ status: 200, data: result, message: "Success" });
 			} catch (err) {
 				logger.error({
-					LOGIN_API_ERROR: {
+					TOPUP_VERIFY_RFID_ERROR: {
+						message: err,
+					},
+				});
+
+				return res.status(err.status || 500).json({
+					status: err.status || 500,
+					data: err.data || [],
+					message: err.message || "Internal Server Error",
+				});
+			}
+		}
+	);
+
+	app.post(
+		"/merchant_topup/api/v1/topup/:identifier",
+		[AccessTokenVerifier],
+
+		/**
+		 * @param {import('express').Request} req
+		 * @param {import('express').Response} res
+		 */
+		async (req, res) => {
+			logger.info({
+				TOPUP_REQUEST: {
+					identifier: req.params.identifier,
+					body: req.body.amount,
+				},
+			});
+
+			try {
+				if (req.role !== "CPO_OWNER") throw new HttpForbidden("Forbidden", []);
+
+				const { identifier } = req.params;
+				const { amount } = req.body;
+
+				const result = await service.Topup(identifier, amount);
+
+				logger.info({ TOPUP_RESPONSE: { identifier, amount } });
+
+				return res
+					.status(200)
+					.json({ status: 200, data: result, message: "Success" });
+			} catch (err) {
+				logger.error({
+					TOPUP_ERROR: {
 						message: err,
 					},
 				});
