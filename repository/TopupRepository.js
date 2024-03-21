@@ -38,19 +38,13 @@ module.exports = class TopupRepository {
 		});
 	}
 
-	Topup(identifier, amount) {
-		const QUERY = `UPDATE users AS u
-        INNER JOIN user_drivers AS ud
-        ON u.id = ud.user_id
-        INNER JOIN rfid_cards AS rc
-        ON ud.id = rc.user_driver_id
-        SET balance = balance + ?
-        WHERE rc.rfid_card_tag = ? OR ud.mobile_number = ?`;
+	Topup(identifier, amount, paymentType) {
+		const QUERY = `CALL WEB_USER_MERCHANT_TOPUP(?,?,?,?)`;
 
 		return new Promise((resolve, reject) => {
 			mysql.query(
 				QUERY,
-				[amount, identifier, Crypto.Encrypt(identifier)],
+				[identifier, Crypto.Encrypt(identifier), amount, paymentType],
 				(err, result) => {
 					if (err) {
 						reject(err);
