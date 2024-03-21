@@ -1,3 +1,8 @@
+/**
+ * @CreatedBy Adrian Nads L. Marcelo
+ * @CreatedAt 2024-03-20
+ * @LastModified 2024-03-21
+ */
 const mysql = require("../database/mysql");
 
 const Crypto = require("../utils/Crypto");
