@@ -44,4 +44,13 @@ module.exports = class TopupService {
 
 		return { STATUS, new_balance };
 	}
+
+	async GetTopupsByUserID(userID, currentDateTime) {
+		const result = await this.#repository.GetTopupsByUserID(
+			userID,
+			currentDateTime
+		);
+
+		return result;
+	}
 };

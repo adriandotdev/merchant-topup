@@ -144,4 +144,64 @@ module.exports = (app) => {
 			}
 		}
 	);
+
+	app.get(
+		"/merchant_topup/api/v1/topup/:user_id",
+		[
+			AccessTokenVerifier,
+			body("current_datetime")
+				.notEmpty()
+				.withMessage("Missing required property: current_datetime")
+				.custom((value) =>
+					String(value).match(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)
+				)
+				.withMessage("Datetime must be in format of: YYYY-MM-DD HH:MM:SS")
+				.escape()
+				.trim(),
+		],
+		/**
+		 * @param {import('express').Request} req
+		 * @param {import('express').Response} res
+		 */
+		async (req, res) => {
+			logger.info({
+				USER_TOPUPS_REQUEST: {
+					user_id: req.params.user_id,
+					current_time: req.body.current_datetime,
+				},
+			});
+
+			try {
+				const { user_id } = req.params;
+				const { current_datetime } = req.body;
+
+				const result = await service.GetTopupsByUserID(
+					user_id,
+					current_datetime
+				);
+
+				logger.info({
+					USER_TOPUPS_RESPONSE: {
+						message: "SUCCESS",
+					},
+				});
+
+				return res
+					.status(200)
+					.json({ status: 200, data: result, message: "Success" });
+			} catch (err) {
+				logger.error({
+					USER_TOPUPS_ERROR: {
+						message: err,
+					},
+				});
+
+				return res.status(err.status || 500).json({
+					status: err.status || 500,
+					data: err.data || [],
+					message: err.message || "Internal Server Error",
+				});
+			}
+		}
+	);
 };

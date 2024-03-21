@@ -55,4 +55,22 @@ module.exports = class TopupRepository {
 			);
 		});
 	}
+
+	GetTopupsByUserID(userID, currentDateTime) {
+		const QUERY = `
+		SELECT *, DATE_ADD(date_created, INTERVAL 60 MINUTE) AS voidable_until
+		FROM topup_logs
+		WHERE user_id = ?
+		AND ? < DATE_ADD(date_created, INTERVAL 60 MINUTE)`;
+
+		return new Promise((resolve, reject) => {
+			mysql.query(QUERY, [userID, currentDateTime], (err, result) => {
+				if (err) {
+					reject(err);
+				}
+
+				resolve(result);
+			});
+		});
+	}
 };
