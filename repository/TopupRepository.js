@@ -61,7 +61,9 @@ module.exports = class TopupRepository {
 		SELECT *, DATE_ADD(date_created, INTERVAL 60 MINUTE) AS voidable_until
 		FROM topup_logs
 		WHERE user_id = ?
-		AND ? < DATE_ADD(date_created, INTERVAL 60 MINUTE)`;
+		AND NOW() < DATE_ADD(date_created, INTERVAL 60 MINUTE) 
+		AND type = 'TOPUP'
+		AND void_id IS NULL`;
 
 		return new Promise((resolve, reject) => {
 			mysql.query(QUERY, [userID, currentDateTime], (err, result) => {
