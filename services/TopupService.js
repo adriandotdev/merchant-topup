@@ -53,4 +53,18 @@ module.exports = class TopupService {
 
 		return result;
 	}
+
+	async VoidTopupByReferenceNumber(referenceNumber) {
+		const result = await this.#repository.VoidTopupByReferenceNumber(
+			referenceNumber
+		);
+
+		const STATUS = result[0][0].STATUS;
+		const reference_number = result[0][0].reference_number;
+		const current_balance = result[0][0].current_balance;
+
+		if (STATUS !== "SUCCESS") return STATUS;
+
+		return { STATUS, current_balance, reference_number };
+	}
 };

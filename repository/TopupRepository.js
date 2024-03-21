@@ -75,4 +75,18 @@ module.exports = class TopupRepository {
 			});
 		});
 	}
+
+	VoidTopupByReferenceNumber(referenceNumber) {
+		const QUERY = `CALL WEB_USER_MERCHANT_VOID_TOPUP(?)`;
+
+		return new Promise((resolve, reject) => {
+			mysql.query(QUERY, [referenceNumber], (err, result) => {
+				if (err) {
+					reject(err);
+				}
+
+				resolve(result);
+			});
+		});
+	}
 };
