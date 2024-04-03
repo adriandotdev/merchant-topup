@@ -6,7 +6,11 @@
 const { validationResult, param, body } = require("express-validator");
 
 const TopupService = require("../services/TopupService");
-const { AccessTokenVerifier } = require("../middlewares/TokenMiddleware");
+const TokenMiddleware = require("../middlewares/TokenMiddleware");
+const {
+	ROLES,
+	RoleManagementMiddleware,
+} = require("../middlewares/RoleManagementMiddleware");
 
 // Utilities
 const logger = require("../config/winston");
@@ -17,6 +21,8 @@ const { HttpUnprocessableEntity } = require("../utils/HttpError");
  */
 module.exports = (app) => {
 	const service = new TopupService();
+	const tokenMiddleware = new TokenMiddleware();
+	const roleMiddleware = new RoleManagementMiddleware();
 
 	/**
 	 * This function will be used by the express-validator for input validation,
@@ -38,7 +44,8 @@ module.exports = (app) => {
 	app.get(
 		"/merchant_topup/api/v1/topup/verify/:identifier",
 		[
-			AccessTokenVerifier,
+			tokenMiddleware.AccessTokenVerifier(),
+			roleMiddleware.CheckRole(ROLES.CPO_OWNER),
 			param("identifier")
 				.notEmpty()
 				.withMessage("Missing required parameter: identifier"),
@@ -83,7 +90,8 @@ module.exports = (app) => {
 	app.post(
 		"/merchant_topup/api/v1/topup/:identifier",
 		[
-			AccessTokenVerifier,
+			tokenMiddleware.AccessTokenVerifier(),
+			roleMiddleware.CheckRole(ROLES.CPO_OWNER),
 			body("amount")
 				.notEmpty()
 				.withMessage("Missing required property: amount")
@@ -148,7 +156,8 @@ module.exports = (app) => {
 	app.get(
 		"/merchant_topup/api/v1/topup/:user_id",
 		[
-			AccessTokenVerifier,
+			tokenMiddleware.AccessTokenVerifier(),
+			roleMiddleware.CheckRole(ROLES.CPO_OWNER),
 			body("current_datetime")
 				.notEmpty()
 				.withMessage("Missing required property: current_datetime")
@@ -208,7 +217,8 @@ module.exports = (app) => {
 	app.post(
 		"/merchant_topup/api/v1/topup/void/:reference_number",
 		[
-			AccessTokenVerifier,
+			tokenMiddleware.AccessTokenVerifier(),
+			roleMiddleware.CheckRole(ROLES.CPO_OWNER),
 			param("reference_number")
 				.notEmpty()
 				.withMessage("Missing required parameter: reference_number"),
