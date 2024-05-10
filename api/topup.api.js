@@ -54,7 +54,7 @@ module.exports = (app) => {
 		 * @param {import('express').Request} req
 		 * @param {import('express').Response} res
 		 */
-		async (req, res) => {
+		async (req, res, next) => {
 			logger.info({
 				TOPUP_VERIFY_RFID_REQUEST: { identifier: req.params.identifier },
 			});
@@ -64,25 +64,23 @@ module.exports = (app) => {
 
 				const { identifier } = req.params;
 
+				logger.info({
+					TOPUP_VERIFY_RFID_REQUEST: {
+						data: { identifier },
+						message: "SUCCESS",
+					},
+				});
+
 				const result = await service.VerifyTopupByIdentifier(identifier);
 
-				logger.info({ TOPUP_VERIFY_RFID_RESPONSE: { identifier } });
+				logger.info({ TOPUP_VERIFY_RFID_RESPONSE: { message: "SUCCESS" } });
 
 				return res
 					.status(200)
 					.json({ status: 200, data: result, message: "Success" });
 			} catch (err) {
-				logger.error({
-					TOPUP_VERIFY_RFID_ERROR: {
-						message: err,
-					},
-				});
-
-				return res.status(err.status || 500).json({
-					status: err.status || 500,
-					data: err.data || [],
-					message: err.message || "Internal Server Error",
-				});
+				req.error_name = "TOPUP_VERIFY_RFID_ERROR";
+				next(err);
 			}
 		}
 	);
@@ -114,7 +112,7 @@ module.exports = (app) => {
 		 * @param {import('express').Request} req
 		 * @param {import('express').Response} res
 		 */
-		async (req, res) => {
+		async (req, res, next) => {
 			logger.info({
 				TOPUP_REQUEST: {
 					identifier: req.params.identifier,
@@ -130,25 +128,18 @@ module.exports = (app) => {
 				const { identifier } = req.params;
 				const { amount, payment_type } = req.body;
 
+				logger.info({ TOPUP_REQUEST: { identifier, amount, payment_type } });
+
 				const result = await service.Topup(identifier, amount, payment_type);
 
-				logger.info({ TOPUP_RESPONSE: { identifier, amount, payment_type } });
+				logger.info({ TOPUP_RESPONSE: { message: "SUCCESS" } });
 
 				return res
 					.status(200)
 					.json({ status: 200, data: result, message: "Success" });
 			} catch (err) {
-				logger.error({
-					TOPUP_ERROR: {
-						message: err,
-					},
-				});
-
-				return res.status(err.status || 500).json({
-					status: err.status || 500,
-					data: err.data || [],
-					message: err.message || "Internal Server Error",
-				});
+				req.error_name = "TOPUP_ERROR";
+				next(err);
 			}
 		}
 	);
@@ -172,17 +163,20 @@ module.exports = (app) => {
 		 * @param {import('express').Request} req
 		 * @param {import('express').Response} res
 		 */
-		async (req, res) => {
-			logger.info({
-				USER_TOPUPS_REQUEST: {
-					user_id: req.params.user_id,
-					current_time: req.body.current_datetime,
-				},
-			});
-
+		async (req, res, next) => {
 			try {
 				const { user_id } = req.params;
 				const { current_datetime } = req.body;
+
+				logger.info({
+					USER_TOPUPS_REQUEST: {
+						data: {
+							user_id,
+							current_datetime,
+						},
+						message: "SUCCESS",
+					},
+				});
 
 				const result = await service.GetTopupsByUserID(
 					user_id,
@@ -199,17 +193,8 @@ module.exports = (app) => {
 					.status(200)
 					.json({ status: 200, data: result, message: "Success" });
 			} catch (err) {
-				logger.error({
-					USER_TOPUPS_ERROR: {
-						message: err,
-					},
-				});
-
-				return res.status(err.status || 500).json({
-					status: err.status || 500,
-					data: err.data || [],
-					message: err.message || "Internal Server Error",
-				});
+				req.error_name = "USER_TOPUPS_ERROR";
+				next(err);
 			}
 		}
 	);
@@ -227,7 +212,7 @@ module.exports = (app) => {
 		 * @param {import('express').Request} req
 		 * @param {import('express').Response} res
 		 */
-		async (req, res) => {
+		async (req, res, next) => {
 			logger.info({
 				VOID_TOPUP_REQUEST: { user_id: req.params.reference_number },
 			});
@@ -235,28 +220,55 @@ module.exports = (app) => {
 			try {
 				const { reference_number } = req.params;
 
-				logger.info({ VOID_TOPUP_RESPONSE: { message: "SUCCESS" } });
+				logger.info({
+					VOID_TOPUP_REQUEST: {
+						data: { reference_number },
+						message: "SUCCESS",
+					},
+				});
 
 				const result = await service.VoidTopupByReferenceNumber(
 					reference_number
 				);
 
+				logger.info({
+					VOID_TOPUP_RESPONSE: {
+						message: "SUCCESS",
+					},
+				});
+
 				return res
 					.status(200)
 					.json({ status: 200, data: result, message: "Success" });
 			} catch (err) {
-				logger.error({
-					VOID_TOPUP_ERROR: {
-						message: err,
-					},
-				});
-
-				return res.status(err.status || 500).json({
-					status: err.status || 500,
-					data: err.data || [],
-					message: err.message || "Internal Server Error",
-				});
+				req.error_name = "VOID_TOPUP_ERROR";
+				next(err);
 			}
 		}
 	);
+
+	app.use((err, req, res, next) => {
+		logger.error({
+			API_REQUEST_ERROR: {
+				error_name: req.error_name || "UNKNOWN_ERROR",
+				message: err.message,
+				stack: err.stack.replace(/\\/g, "/"), // Include stack trace for debugging
+				request: {
+					method: req.method,
+					url: req.url,
+					code: err.status || 500,
+				},
+				data: err.data || [],
+			},
+		});
+
+		const status = err.status || 500;
+		const message = err.message || "Internal Server Error";
+
+		res.status(status).json({
+			status,
+			data: err.data || [],
+			message,
+		});
+	});
 };
